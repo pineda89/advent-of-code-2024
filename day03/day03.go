@@ -9,11 +9,19 @@ import (
 	"strings"
 )
 
-// 165784915
+var (
+	r      = regexp.MustCompile(`mul\(\d+,\d+\)`)
+	r_do   = regexp.MustCompile(`do\(\)`)
+	r_dont = regexp.MustCompile(`don't\(\)`)
+)
 
-var r = regexp.MustCompile(`mul\(\d+,\d+\)`)
-var r_do = regexp.MustCompile(`do\(\)`)
-var r_dont = regexp.MustCompile(`don't\(\)`)
+type action int8
+
+const (
+	DO_ACTION   action = 1
+	DONT_ACTION action = 2
+	MULT_ACTION action = 3
+)
 
 type Day03 struct {
 	filepath string
@@ -26,9 +34,7 @@ func (d *Day03) Part1() string {
 		for j := range all {
 			var v1, v2 int
 			fmt.Sscanf(all[j][0], "mul(%d,%d)", &v1, &v2)
-			if v1 > 0 && v1 <= 999 && v2 > 0 && v2 <= 999 {
-				result += v1 * v2
-			}
+			result += v1 * v2
 		}
 	}
 
@@ -38,12 +44,8 @@ func (d *Day03) Part1() string {
 type pair struct {
 	index     int
 	values    [2]int
-	operation int8
+	operation action
 	line      int
-}
-
-func (p pair) String() string {
-	return fmt.Sprintf("index %d values (%d %d) operation %d line %d\n", p.index, p.values[0], p.values[1], p.operation, p.line)
 }
 
 func (d *Day03) Part2() string {
@@ -56,7 +58,7 @@ func (d *Day03) Part2() string {
 		for i := range do_indexes {
 			pairs = append(pairs, pair{
 				index:     do_indexes[i][0],
-				operation: 1,
+				operation: DO_ACTION,
 				line:      l,
 			})
 		}
@@ -64,7 +66,7 @@ func (d *Day03) Part2() string {
 		for i := range dont_indexes {
 			pairs = append(pairs, pair{
 				index:     dont_indexes[i][0],
-				operation: 2,
+				operation: DONT_ACTION,
 				line:      l,
 			})
 		}
@@ -72,7 +74,7 @@ func (d *Day03) Part2() string {
 		for i := range r_indexes {
 			p := pair{
 				index:     r_indexes[i][0],
-				operation: 3,
+				operation: MULT_ACTION,
 				line:      l,
 			}
 			fmt.Sscanf(line[r_indexes[i][0]:r_indexes[i][1]], "mul(%d,%d)", &p.values[0], &p.values[1])
@@ -91,11 +93,11 @@ func (d *Day03) Part2() string {
 	var result int
 	for i := range pairs {
 		switch pairs[i].operation {
-		case 1:
+		case DO_ACTION:
 			mustDo = true
-		case 2:
+		case DONT_ACTION:
 			mustDo = false
-		case 3:
+		case MULT_ACTION:
 			if mustDo {
 				result += pairs[i].values[0] * pairs[i].values[1]
 			}
